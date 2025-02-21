@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Little Big Adventure: Twinsen's Quest Physical Copy Cover Art</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    </head>
+    <body style="margin: 0; overflow: hidden; background-color: #dddddd;">
+         <div style="position: absolute; width: 100%; margin: 5px;">
+             <div style="display: flex; justify-content: center; align-items: center;">
+                 <img id="ps5" src="assets/ps5_logo.png" style="cursor: pointer; width: 100px; height: 70px; background-image: url(assets/ps5_logo.png); border: none; border-radius: 10px; font-size: 1.5em; margin: 5px;"></button>
+                 <img id="switch" src="assets/switch_logo.png" style="cursor: pointer; width: 100px; height: 70px; background-image: url(assets/switch_logo.png); border: none; border-radius: 10px; font-size: 1.5em; margin: 5px;"></button>
+             </div>
+         </div>
+
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "./libs/threejs/three.module.min.js",
+                    "three/addons/": "./libs/threejs/addons/"
+                }
+            }
+        </script>
+
+        <script type="module">
+            import * as THREE from 'three'
+            import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+            window.URL = window.URL || window.webkitURL
+            window.THREE = THREE
+                    
+            let scene, camera, renderer, ps5_box, switch_box, controls;
+
+            const init = async () => {
+                const loader = new THREE.TextureLoader();
+
+                const loadTexture = async (url) => {
+                    return new Promise((resolve, reject) => {
+                        const texture = loader.load(url, resolve, undefined, reject);
+                        texture.colorSpace = THREE.SRGBColorSpace
+                        return texture;
+                    });
+                }
+                const frontP = loadTexture('assets/ps5_front.png');
+                const backP = loadTexture('assets/ps5_back.png');
+                const sideP = loadTexture('assets/ps5_side.png');
+                const topDownP = loadTexture('assets/ps5_top_down.png');
+                const [front, back, side, topDown] = await Promise.all([frontP, backP, sideP, topDownP]);
+
+                const switch_frontP = loadTexture('assets/switch_front.png');
+                const switch_backP = loadTexture('assets/switch_back.png');
+                const switch_sideP = loadTexture('assets/switch_side.png');
+                const switch_topDownP = loadTexture('assets/switch_top_down.png');
+                const [switch_front, switch_back, switch_side, switch_topDown] = await Promise.all([switch_frontP, switch_backP, switch_sideP, switch_topDownP]);
+
+                scene = new THREE.Scene();                
+                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                
+                renderer = new THREE.WebGLRenderer({antialias: true});
+                renderer.toneMapping = THREE.LinearToneMapping;
+                renderer.toneMappingExposure = 0.8;
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                renderer.shadowMap.needsUpdate = true;
+
+                document.body.appendChild(renderer.domElement);
+
+                controls = new OrbitControls( camera, renderer.domElement );
+                controls.minPolarAngle = 0;
+		        controls.maxPolarAngle =  Math.PI * 0.5;
+                
+                const ambientLight = new THREE.AmbientLight(0xffffff, 10);
+                scene.add(ambientLight);
+
+                const directionalLight = new THREE.DirectionalLight(0xffffff, -5);
+                directionalLight.position.set(0, 2, 0);
+                directionalLight.castShadow = true;
+                directionalLight.shadow.mapSize.width = 512;
+                directionalLight.shadow.mapSize.height = 512;
+                directionalLight.shadow.camera.left = -100;
+                directionalLight.shadow.camera.right = 100;
+                directionalLight.shadow.camera.bottom = -100;
+                directionalLight.shadow.camera.top = 100;
+                directionalLight.shadow.camera.near = 1.0;
+                directionalLight.shadow.camera.far = 100;
+                directionalLight.shadow.bias = 0.0001;
+                scene.add(directionalLight);
+
+                const geometry = new THREE.BoxGeometry(7.5, 10, 0.8);
+                
+                const ps5_box_materials = [
+                    new THREE.MeshPhongMaterial({ map: side }), //right side
+                    new THREE.MeshPhongMaterial({ map: side }), //left side
+                    new THREE.MeshPhongMaterial({ map: topDown }), //top side
+                    new THREE.MeshPhongMaterial({ map: topDown }), //bottom side
+                    new THREE.MeshPhongMaterial({ map: front }), //front side
+                    new THREE.MeshPhongMaterial({ map: back }), //back side
+                ];
+                ps5_box = new THREE.Mesh(geometry, ps5_box_materials);
+                ps5_box.castShadow = true;
+                ps5_box.receiveShadow = true;
+                ps5_box.position.set(0, 0, 0);
+                scene.add(ps5_box);
+
+                const geometry_switch = new THREE.BoxGeometry(6, 10, 0.5);
+                const switch_box_materials = [
+                    new THREE.MeshPhongMaterial({ map: switch_side }), //right side
+                    new THREE.MeshPhongMaterial({ map: switch_side }), //left side
+                    new THREE.MeshPhongMaterial({ map: switch_topDown }), //top side
+                    new THREE.MeshPhongMaterial({ map: switch_topDown }), //bottom side
+                    new THREE.MeshPhongMaterial({ map: switch_front }), //front side
+                    new THREE.MeshPhongMaterial({ map: switch_back }), //back side
+                ];
+                switch_box = new THREE.Mesh(geometry_switch, switch_box_materials);
+                switch_box.castShadow = true;
+                switch_box.receiveShadow = true;
+                switch_box.position.set(0, 0, 0);
+                switch_box.visible = false;
+                scene.add(switch_box);
+
+                const planeGeometry = new THREE.PlaneGeometry(100, 100);
+                const planeMaterial = new THREE.ShadowMaterial();
+                const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+                plane.castShadow = true;
+                plane.receiveShadow = true;
+                plane.rotation.x = -Math.PI / 2;
+                plane.scale.set(100, 100, 100);
+                plane.position.y = -5;
+                scene.add(plane);
+
+                camera.position.set(-6, 6, 9);
+                controls.saveState();
+                controls.update();
+
+                // add event listener for the ps5 button
+                document.getElementById('ps5').addEventListener('click', () => {
+                    camera.position.set(-6, 6, 9);
+                    controls.saveState();
+                    controls.reset();
+                    ps5_box.visible = true;
+                    switch_box.visible = false;
+                });
+                document.getElementById('switch').addEventListener('click', () => {
+                    camera.position.set(6, 6, 9);
+                    controls.saveState();
+                    controls.reset();
+                    ps5_box.visible = false;
+                    switch_box.visible = true;
+                });
+            }
+
+            //animation
+            const frame = async () => {
+                requestAnimationFrame(frame);
+                renderer.setClearColor(0xdddddd, 0);
+                controls.update();
+                renderer.render(scene, camera);
+            }
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }, false);
+
+            await init();
+            await frame();
+        </script>
+    </body>
+</html>
